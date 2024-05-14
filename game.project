@@ -14,7 +14,6 @@ input_method = HiddenInputField
 
 [project]
 title = Mirror Dreams
-dependencies#0 = https://github.com/defold/lua-language-server/releases/download/v0.0.6/release.zip
 
 [render]
 clear_color_red = 0.85

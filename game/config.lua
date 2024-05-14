@@ -1,8 +1,8 @@
 ---@class Config
 ---@field display_width integer
 ---@field display_height integer
----@field tile_width integer
----@field tile_height integer
+---@field tile_size integer
+---@field items string[]
 ---@field levels LevelConfig[]
 
 ---@class LevelConfig
@@ -36,9 +36,9 @@ end
 ---@type Config
 local M = {
     display_width = sys.get_config_int("display.width"),
-    display_height = sys.get_config_int("display.width"),
-    tile_width = 64,
-    tile_height = 64,
+    display_height = sys.get_config_int("display.height"),
+    tile_size = 64,
+    items = {"diamond", "opal"},
     levels = {
         level(1, 1, { "a", "b", "b", "a" })
     }
