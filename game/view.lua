@@ -4,10 +4,24 @@ local camera = require("game.camera")
 
 local M = {}
 
+
+---@param x integer
+---@param y integer
+---@return vector3
+local function coord_to_board_pos(x,y)
+    return vmath.vector3((x - 1) * config.tile_size, (y - 1) * config.tile_size, 0)
+end
+
 local function create_item_view(item, x, y)
-    local item_go = factory.create("#item", vmath.vector3((x-1) * config.tile_size, (y-1) * config.tile_size, 0))
+    local item_go = factory.create("#item", coord_to_board_pos(x, y))
     go.set_parent(item_go, ".")
     sprite.play_flipbook(msg.url(nil, item_go, hash("view")), "item_" .. item)
+end
+
+local function create_mirror_view(x, y, direction)
+    local mirror_go = factory.create("#mirror", coord_to_board_pos(x, y))
+    go.set_parent(mirror_go, ".")
+    sprite.play_flipbook(msg.url(nil, mirror_go, hash("view")), "mirror_" .. direction)
 end
 
 ---@generic T
@@ -127,12 +141,19 @@ function M.on_input(view, action_id, action)
             for i = 1, #view.available_dots do
                 local dot = view.available_dots[i]
                 if dot.dot_x == dot_x and dot.dot_y == dot_y then
+                    logic.place_mirror(view.level, dot.x, dot.y, dot.direction)
+                    create_mirror_view(dot.x, dot.y, dot.direction)
                     -- TODO: insert mirror here!
-                    pprint(dot)
                     break
                 end
             end
             clear_available_turns(view)
+        -- else
+            -- local world_pos = camera.screen_to_world_2d(view.camera, action.screen_x, action.screen_y)
+            -- local logic_pos = (world_pos - go.get_position()) / config.tile_size
+            -- local x = math.floor(logic_pos.x + 1.0)
+            -- local y = math.floor(logic_pos.y + 1.0)
+            -- print(x, y, logic.get_mirror_or_item(view.level, x, y))
         end
     end
     -- pprint({level, action_id, action})

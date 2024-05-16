@@ -8,7 +8,7 @@
 ---@class LevelConfig
 ---@field width integer
 ---@field height integer
----@field items Item[] number of items must be equal to `(width + height) * 2`, in the order `top -> right -> bottom -> left`, horizontal left to right, vertical top to bottom
+---@field items Item[] number of items must be equal to `(width + height) * 2`, in the order `top -> right -> bottom -> left`, horizontal left to right, vertical bottom to top
 
 ---@alias Item string string like "a", "b" etc., identifies an unique abstract item
 
@@ -40,7 +40,7 @@ local M = {
     tile_size = 64,
     items = {"diamond", "opal"},
     levels = {
-        level(1, 1, { "a", "b", "b", "a" })
+        level(2, 2, { "a", "a", "b", "b", "b", "b", "a", "a" })
     }
 }
 
