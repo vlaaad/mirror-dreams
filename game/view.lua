@@ -12,10 +12,18 @@ local function coord_to_board_pos(x,y)
     return vmath.vector3((x - 1) * config.tile_size, (y - 1) * config.tile_size, 0)
 end
 
-local function create_item_view(item, x, y)
+---@param level Level
+---@param id_to_item table<string,string>
+---@param item_gos userdata[]
+---@param x integer
+---@param y integer
+local function create_item_view(level, id_to_item, item_gos, x, y)
+    local mi = assert(logic.get_mirror_index(level, x, y))
+    local item = id_to_item[level.config.items[mi]]
     local item_go = factory.create("#item", coord_to_board_pos(x, y))
     go.set_parent(item_go, ".")
     sprite.play_flipbook(msg.url(nil, item_go, hash("view")), "item_" .. item)
+    item_gos[mi] = item_go
 end
 
 local function create_mirror_view(x, y, direction)
@@ -50,6 +58,7 @@ end
 ---@field camera Camera
 ---@field dot_sprites userdata[]
 ---@field available_dots AvailableTurn[]
+---@field item_gos userdata[]
 
 ---@param level_id integer
 ---@return LevelView
@@ -67,17 +76,21 @@ function M.create_view(level_id)
     local view_width = (level_config.width) * config.tile_size
     local view_height = (level_config.height) * config.tile_size
     go.set_position(vmath.vector3((config.display_width - view_width) * 0.5, (config.display_height - view_height) * 0.5, 0))
-    for x = 1, level_config.width do
-        local top = level_config.items[x]
-        create_item_view(id_to_item[top], x, level_config.height + 1)
-        local bottom = level_config.items[x + level_config.width + level_config.height]
-        create_item_view(id_to_item[bottom], x, 0)
+    local item_gos = {}
+    -- top right bottom left
+    for x = 1, level_config.width do 
+        local y = level_config.height + 1
+        create_item_view(level, id_to_item, item_gos, x, y)
     end
     for y = 1, level_config.height do
-        local right = level_config.items[level_config.width + y]
-        create_item_view(id_to_item[right], level_config.width + 1, y)
-        local left = level_config.items[level_config.width + level_config.width + level_config.height + y]
-        create_item_view(id_to_item[left], 0, y)
+        local x = level_config.width + 1
+        create_item_view(level, id_to_item, item_gos, x, y)
+    end
+    for x = 1, level_config.width do 
+        create_item_view(level, id_to_item, item_gos, x, 0)
+    end
+    for y = 1, level_config.height do
+        create_item_view(level, id_to_item, item_gos, 0, y)
     end
     local dot_sprites = {}
     for y = 0, level_config.height do
@@ -93,6 +106,7 @@ function M.create_view(level_id)
         level = level,
         camera = camera.create(0, 0, config.display_width, config.display_height),
         dot_sprites = dot_sprites,
+        item_gos = item_gos,
         available_dots = {}
     }
     return ret
@@ -123,6 +137,32 @@ local function clear_available_turns(view)
 end
 
 ---@param view LevelView
+---@param x integer
+---@param y integer
+local function show_item_match(view, x, y)
+    local item_go = view.item_gos[assert(logic.get_mirror_index(view.level, x, y))]
+    local check_url = msg.url(nil, item_go, hash("check"))
+    sprite.play_flipbook(check_url, "ui_item_match")
+    go.set(check_url, "scale", vmath.vector3())
+    go.animate(check_url, "scale", go.PLAYBACK_ONCE_FORWARD, vmath.vector3(1.0), go.EASING_OUTBACK, 0.5)
+end
+
+---@param view LevelView
+---@param steps RayStep[]
+local function show_ray_trail(view, steps) 
+    for i = 1, #steps do
+        local step = steps[i]
+        local ray_go = factory.create("#ray", coord_to_board_pos(step.x, step.y))
+        go.set_parent(ray_go, ".")
+        local view_url = msg.url(nil, ray_go, hash("view"))
+        sprite.play_flipbook(view_url, "ray_" .. step.shape)
+        go.animate(view_url, "tint.w", go.PLAYBACK_ONCE_FORWARD, 0, go.EASING_LINEAR, 1.0, 0.0, function ()
+            go.delete(ray_go)
+        end)
+    end
+end
+
+---@param view LevelView
 ---@param action_id userdata
 ---@param action table
 function M.on_input(view, action_id, action)
@@ -141,19 +181,22 @@ function M.on_input(view, action_id, action)
             for i = 1, #view.available_dots do
                 local dot = view.available_dots[i]
                 if dot.dot_x == dot_x and dot.dot_y == dot_y then
-                    logic.place_mirror(view.level, dot.x, dot.y, dot.direction)
+                    local matches = logic.place_mirror(view.level, dot.x, dot.y, dot.direction)
                     create_mirror_view(dot.x, dot.y, dot.direction)
-                    -- TODO: insert mirror here!
+                    for j = 1, #matches do
+                        timer.delay((j - 1) * 0.5, false, function()
+                            local match = matches[j]
+                            local first = match[1]
+                            show_item_match(view, first.x, first.y)
+                            local last = match[#match]
+                            show_item_match(view, last.x, last.y)
+                            show_ray_trail(view, match)
+                        end)
+                    end
                     break
                 end
             end
             clear_available_turns(view)
-        -- else
-            -- local world_pos = camera.screen_to_world_2d(view.camera, action.screen_x, action.screen_y)
-            -- local logic_pos = (world_pos - go.get_position()) / config.tile_size
-            -- local x = math.floor(logic_pos.x + 1.0)
-            -- local y = math.floor(logic_pos.y + 1.0)
-            -- print(x, y, logic.get_mirror_or_item(view.level, x, y))
         end
     end
     -- pprint({level, action_id, action})

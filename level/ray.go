@@ -1,7 +1,7 @@
 embedded_components {
   id: "view"
   type: "sprite"
-  data: "default_animation: \"mirror_up-right\"\n"
+  data: "default_animation: \"ray_down-left\"\n"
   "material: \"/builtins/materials/sprite.material\"\n"
   "blend_mode: BLEND_MODE_ALPHA\n"
   "textures {\n"
@@ -12,7 +12,7 @@ embedded_components {
   position {
     x: 32.0
     y: 32.0
-    z: 0.1
+    z: 0.05
   }
   rotation {
     x: 0.0

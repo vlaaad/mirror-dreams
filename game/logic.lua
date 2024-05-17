@@ -1,6 +1,7 @@
 ---@class Level
 ---@field config LevelConfig
 ---@field mirrors (MirrorDirection|false)[]
+---@field matches boolean[] item matches, same ordering as config's items
 
 ---@alias MirrorDirection "up-right"|"down-right"
 
@@ -15,8 +16,16 @@ function M.create_level(config)
     for i = 1, config.width * config.height do
         mirrors[i] = false
     end
+    local matches = {}
+    for i = 1, #config.items do
+        matches[i] = false
+    end
     ---@type Level
-    local level = { config = config, mirrors = mirrors }
+    local level = { 
+        config = config, 
+        mirrors = mirrors,
+        matches = matches
+    }
     return level
 end
 
@@ -49,8 +58,8 @@ end
 ---@param level Level
 ---@param x integer
 ---@param y integer
----@return MirrorDirection | nil | string
-local function get_mirror_or_item(level, x, y)
+---@return integer?
+function M.get_mirror_index(level, x, y) 
     -- number of items must be equal to `(width + height) * 2`, 
     -- in the order `top -> right -> bottom -> left`, 
     -- horizontal left to right, vertical bototm to top
@@ -60,22 +69,29 @@ local function get_mirror_or_item(level, x, y)
     local y_in_bounds = y >= 1 and y <= h
     -- top
     if y == h + 1 and x_in_bounds then
-        return level.config.items[x]
+        return x
     end
     -- bottom
     if y == 0 and x_in_bounds then
-        return level.config.items[w + h + x]
+        return w + h + x
     end
     -- right
     if x == w + 1 and y_in_bounds then
-        return level.config.items[w + y]
+        return w + y
     end
     -- left
     if x == 0 and y_in_bounds then
-        return level.config.items[w + w + h + y]
+        return w + w + h + y
     end
+end
 
-    return M.get_mirror(level, x, y)
+---@param level Level
+---@param x integer
+---@param y integer
+---@return MirrorDirection | nil | string
+local function get_mirror_or_item(level, x, y)
+    local mi = M.get_mirror_index(level, x, y)
+    return mi and level.config.items[mi] or M.get_mirror(level, x, y)
 end
 
 ---@param level Level
@@ -240,18 +256,55 @@ end
 ---@param x integer
 ---@param y integer
 ---@param direction MirrorDirection
+---@return RayStep[][]
 function M.place_mirror(level, x, y, direction)
-    local i = coordinate_to_index(level, x, y)
-    assert(not level.mirrors[i])
-    level.mirrors[i] = direction
-    pprint({
-        left = cast_ray(level, x, y, "left"),
-        right = cast_ray(level, x, y, "right"),
-        up = cast_ray(level, x, y, "up"),
-        down = cast_ray(level, x, y, "down"),
-    })
+    local index = coordinate_to_index(level, x, y)
+    assert(not level.mirrors[index])
+    level.mirrors[index] = direction
+
+    local left = cast_ray(level, x, y, "left")
+    local right = cast_ray(level, x, y, "right")
+    local up = cast_ray(level, x, y, "up")
+    local down = cast_ray(level, x, y, "down")
+
+    local ray_pairs
+    if direction == "up-right" then
+        ray_pairs = {{down, right}, {up, left}}
+    else
+        ray_pairs = {{up, right}, {down, left}}
+    end
+
+    local ret = {} ---@type RayStep[][]
+    for i = 1, #ray_pairs do
+        local a = ray_pairs[i][1] --- @type RayStep[]
+        local b = ray_pairs[i][2] --- @type RayStep[]
+        local ais = a[#a]
+        local bis = b[#b]
+        
+
+        if ais.item and bis.item and ais.item == bis.item then -- match?
+            local ami = assert(M.get_mirror_index(level, ais.x, ais.y))
+            local bmi = assert(M.get_mirror_index(level, bis.x, bis.y))
+            if not level.matches[ami] and not level.matches[bmi] then -- match!
+                level.matches[ami] = true
+                level.matches[bmi] = true
+                -- level
+                local steps = {}
+                for j = 1, #a do
+                    steps[#steps+1] = a[#a-j+1]
+                end
+                for j = 2, #b do
+                    steps[#steps+1] = b[j]
+                end
+                ret[#ret+1] = steps
+            end
+        end
+    end
+
+    return ret
+
     -- todo: after casting the rays, we should combine them and check if they complete the items.
-    
+
     -- TODO: now we do the rays, maybe for each item? or from the coordinate?
     -- TODO: also find if the game is failed by creating 2 disconnected regions
 end
