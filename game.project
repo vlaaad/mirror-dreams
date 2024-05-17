@@ -13,11 +13,11 @@ high_dpi = 1
 input_method = HiddenInputField
 
 [project]
-title = Mirror Dreams
+title = Mirror Match
 
 [render]
-clear_color_red = 0.85
+clear_color_red = 0.65
 clear_color_green = 0.9
-clear_color_blue = 1.0
+clear_color_blue = 0.95
 clear_color_alpha = 1.0
 

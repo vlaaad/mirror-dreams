@@ -302,10 +302,6 @@ function M.place_mirror(level, x, y, direction)
     end
 
     return ret
-
-    -- todo: after casting the rays, we should combine them and check if they complete the items.
-
-    -- TODO: now we do the rays, maybe for each item? or from the coordinate?
     -- TODO: also find if the game is failed by creating 2 disconnected regions
 end
 

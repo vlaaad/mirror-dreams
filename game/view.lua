@@ -144,6 +144,7 @@ local function show_item_match(view, x, y)
     local check_url = msg.url(nil, item_go, hash("check"))
     sprite.play_flipbook(check_url, "ui_item_match")
     go.set(check_url, "scale", vmath.vector3())
+    go.animate(msg.url(nil, item_go, hash("view")), "tint.w", go.PLAYBACK_ONCE_FORWARD, 0.25, go.EASING_INCUBIC, 0.5)
     go.animate(check_url, "scale", go.PLAYBACK_ONCE_FORWARD, vmath.vector3(1.0), go.EASING_OUTBACK, 0.5)
 end
 
@@ -156,7 +157,7 @@ local function show_ray_trail(view, steps)
         go.set_parent(ray_go, ".")
         local view_url = msg.url(nil, ray_go, hash("view"))
         sprite.play_flipbook(view_url, "ray_" .. step.shape)
-        go.animate(view_url, "tint.w", go.PLAYBACK_ONCE_FORWARD, 0, go.EASING_LINEAR, 1.0, 0.0, function ()
+        go.animate(view_url, "tint.w", go.PLAYBACK_ONCE_FORWARD, 0.0, go.EASING_LINEAR, 1.0, 0.0, function ()
             go.delete(ray_go)
         end)
     end
