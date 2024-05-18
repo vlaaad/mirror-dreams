@@ -2,6 +2,7 @@
 ---@field config LevelConfig
 ---@field mirrors (MirrorDirection|false)[]
 ---@field matches boolean[] item matches, same ordering as config's items
+---@field failed boolean
 
 ---@alias MirrorDirection "up-right"|"down-right"
 
@@ -24,7 +25,8 @@ function M.create_level(config)
     local level = { 
         config = config, 
         mirrors = mirrors,
-        matches = matches
+        matches = matches,
+        failed = false
     }
     return level
 end
@@ -188,6 +190,22 @@ local function cast_ray_next_todo(x, y, direction)
     end
 end
 
+---@param x integer
+---@param y integer
+---@param direction RayDirection
+---@return string
+local function fill_ray_reverse_todo(x, y, direction) 
+    if direction == "up" then
+        return cast_ray_make_todo(x, y - 1, "down")
+    elseif direction == "down" then
+        return cast_ray_make_todo(x, y + 1, "up")
+    elseif direction == "left" then
+        return cast_ray_make_todo(x + 1, y, "right")
+    else
+        return cast_ray_make_todo(x - 1, y, "left")
+    end
+end
+
 ---@param old RayDirection
 ---@param new RayDirection
 ---@return RayShape
@@ -267,12 +285,72 @@ local function cast_ray(level, x, y, direction)
     return steps
 end
 
+---@class ReachableItem
+---@field x integer
+---@field y integer
+---@field item string
+
+---@param level Level
+---@param x integer
+---@param y integer
+---@param direction RayDirection
+---@return ReachableItem[] reachable_items
+local function fill_ray(level, x, y, direction)
+    local visited = {}
+    local todos = {cast_ray_make_todo(x, y, direction), fill_ray_reverse_todo(x, y, direction)}
+    local results = {} ---@type ReachableItem[]
+    while #todos > 0 do
+        local todo = table.remove(todos)
+        if not visited[todo] then
+            visited[todo] = true
+            local tx, ty, dir = cast_ray_parse_todo(todo)
+            local mirror_or_item = get_mirror_or_item(level, tx, ty)
+            if is_mirror(mirror_or_item) then
+                -- found mirror, reflect
+                todos[#todos+1] = cast_ray_next_todo(tx, ty, cast_ray_reflect(dir, mirror_or_item --[[@as MirrorDirection]]))
+            elseif not mirror_or_item then
+                -- empty space, fill in every possible direction
+                todos[#todos+1] = cast_ray_next_todo(tx, ty, "up")
+                todos[#todos+1] = cast_ray_next_todo(tx, ty, "down")
+                todos[#todos+1] = cast_ray_next_todo(tx, ty, "left")
+                todos[#todos+1] = cast_ray_next_todo(tx, ty, "right")
+            elseif not level.matches[assert(M.get_mirror_index(level, tx, ty))] then
+                -- found an unmatched item
+                results[#results+1] = {x = tx, y = ty, item = mirror_or_item}
+            end
+        end
+    end
+    return results
+end
+
+---@param level Level
+---@return boolean
+function M.is_win(level)
+    for i = 1, #level.matches do
+        if not level.matches[i] then 
+            return false 
+        end
+    end
+    return true
+end
+
+---@param level Level
+---@return boolean
+function M.is_ended(level)
+    return level.failed or M.is_win(level)
+end
+
+---@class PlaceMirrorResult
+---@field match_rays RayStep[][]
+---@field failures ReachableItem[]?
+
 ---@param level Level
 ---@param x integer
 ---@param y integer
 ---@param direction MirrorDirection
----@return RayStep[][]
+---@return PlaceMirrorResult
 function M.place_mirror(level, x, y, direction)
+    assert(not M.is_ended(level))
     local index = coordinate_to_index(level, x, y)
     assert(not level.mirrors[index])
     level.mirrors[index] = direction
@@ -289,13 +367,12 @@ function M.place_mirror(level, x, y, direction)
         ray_pairs = {{up, right}, {down, left}}
     end
 
-    local ret = {} ---@type RayStep[][]
+    local match_rays = {} ---@type RayStep[][]
     for i = 1, #ray_pairs do
         local a = ray_pairs[i][1] --- @type RayStep[]
         local b = ray_pairs[i][2] --- @type RayStep[]
         local ais = a[#a]
         local bis = b[#b]
-        
 
         if ais.item and bis.item and ais.item == bis.item then -- match?
             local ami = assert(M.get_mirror_index(level, ais.x, ais.y))
@@ -311,13 +388,40 @@ function M.place_mirror(level, x, y, direction)
                 for j = 2, #b do
                     steps[#steps+1] = b[j]
                 end
-                ret[#ret+1] = steps
+                match_rays[#match_rays+1] = steps
             end
         end
     end
 
-    return ret
-    -- TODO: also find if the game is failed by creating 2 disconnected regions
+    local unmatchable_items = {} ---@type ReachableItem[]
+    local reachable_regions = {fill_ray(level, x, y, "up"), fill_ray(level, x, y, "down")}
+    for i = 1, #reachable_regions do
+        local reachable_items = reachable_regions[i]
+        local item_to_reachable_items = {} ---@type table<string, ReachableItem[]>
+        for j = 1, #reachable_items do
+            local reachable_item = reachable_items[j]
+            local grouped_items = item_to_reachable_items[reachable_item.item]
+            if not grouped_items then
+                grouped_items = {}
+                item_to_reachable_items[reachable_item.item] = grouped_items
+            end
+            grouped_items[#grouped_items+1] = reachable_item
+        end
+        for _, grouped_reachable_items in pairs(item_to_reachable_items) do
+            if #grouped_reachable_items % 2 ~= 0 then
+                unmatchable_items[#unmatchable_items+1] = grouped_reachable_items[1]
+            end
+        end
+    end
+    if #unmatchable_items > 0 then
+        level.failed = true
+    end
+    ---@type PlaceMirrorResult
+    local result = {
+        match_rays = match_rays,
+        failures = #unmatchable_items > 0 and unmatchable_items or nil
+    }
+    return result
 end
 
 return M

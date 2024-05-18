@@ -2,5 +2,9 @@ Mirror puzzle...
 
 TODOS:
 
-- find if we lost the game
-- find if we won the game, do UI and level progression
+- detect when we won the game, show end level ui (fail/success)
+- level progression (like in the chair game)
+- analytics
+- tutorial
+- show better dot selection
+- start screen

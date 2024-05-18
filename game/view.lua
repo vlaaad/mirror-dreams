@@ -149,6 +149,16 @@ local function show_item_match(view, x, y)
 end
 
 ---@param view LevelView
+---@param failure ReachableItem
+local function show_item_failure(view, failure)
+    local item_go = view.item_gos[assert(logic.get_mirror_index(view.level, failure.x, failure.y))]
+    local check_url = msg.url(nil, item_go, hash("check"))
+    sprite.play_flipbook(check_url, "ui_item_failure")
+    go.set(check_url, "scale", vmath.vector3())
+    go.animate(check_url, "scale", go.PLAYBACK_ONCE_FORWARD, vmath.vector3(1.0), go.EASING_OUTBACK, 0.5)
+end
+
+---@param view LevelView
 ---@param steps RayStep[]
 local function show_ray_trail(view, steps) 
     for i = 1, #steps do
@@ -167,7 +177,7 @@ end
 ---@param action_id userdata
 ---@param action table
 function M.on_input(view, action_id, action)
-    if action_id == hash("touch") then
+    if not logic.is_ended(view.level) and action_id == hash("touch") then
         if action.pressed then
             local world_pos = camera.screen_to_world_2d(view.camera, action.screen_x, action.screen_y)
             local logic_pos = (world_pos - go.get_position()) / config.tile_size
@@ -182,16 +192,23 @@ function M.on_input(view, action_id, action)
             for i = 1, #view.available_dots do
                 local dot = view.available_dots[i]
                 if dot.dot_x == dot_x and dot.dot_y == dot_y then
-                    local matches = logic.place_mirror(view.level, dot.x, dot.y, dot.direction)
+                    local result = logic.place_mirror(view.level, dot.x, dot.y, dot.direction)
                     create_mirror_view(dot.x, dot.y, dot.direction)
-                    for j = 1, #matches do
+                    for j = 1, #result.match_rays do
                         timer.delay((j - 1) * 0.5, false, function()
-                            local match = matches[j]
+                            local match = result.match_rays[j]
                             local first = match[1]
                             show_item_match(view, first.x, first.y)
                             local last = match[#match]
                             show_item_match(view, last.x, last.y)
                             show_ray_trail(view, match)
+                        end)
+                    end
+                    if result.failures then
+                        timer.delay(#result.match_rays * 0.5, false, function ()
+                            for j = 1, #result.failures do
+                                show_item_failure(view, result.failures[j])
+                            end
                         end)
                     end
                     break
