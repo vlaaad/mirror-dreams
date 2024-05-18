@@ -151,20 +151,40 @@ end
 ---@field item string?
 ---@field shape RayShape
 
+local todo_template = "%d/%d/%s"
+
 ---@param x integer
 ---@param y integer
 ---@param direction RayDirection
 ---@return string
-local function cast_ray_next_todo(x, y, direction) 
-    local template = "%d/%d/%s"
+local function cast_ray_make_todo(x, y, direction)
+    return todo_template:format(x, y, direction)
+end
+
+local todo_parse = "^(%d+)/(%d+)/(.+)"
+
+---@param todo string
+---@return integer x
+---@return integer y
+---@return RayDirection direction
+local function cast_ray_parse_todo(todo)
+    local sx, sy, dir = string.match(todo, todo_parse)
+    return tonumber(sx) --[[@as integer]], tonumber(sy) --[[@as integer]], dir
+end
+
+---@param x integer
+---@param y integer
+---@param direction RayDirection
+---@return string
+local function cast_ray_next_todo(x, y, direction)
     if direction == "up" then
-        return template:format(x, y + 1, direction)
+        return cast_ray_make_todo(x, y + 1, direction)
     elseif direction == "down" then
-        return template:format(x, y - 1, direction)
+        return cast_ray_make_todo(x, y - 1, direction)
     elseif direction == "left" then
-        return template:format(x - 1, y, direction)
+        return cast_ray_make_todo(x - 1, y, direction)
     else
-        return template:format(x + 1, y, direction)
+        return cast_ray_make_todo(x + 1, y, direction)
     end
 end
 
@@ -198,7 +218,7 @@ end
 ---@param ray_direction RayDirection
 ---@param mirror_direction MirrorDirection
 ---@return RayDirection
-local function reflect(ray_direction, mirror_direction)
+local function cast_ray_reflect(ray_direction, mirror_direction)
     assert(is_mirror(mirror_direction))
     if mirror_direction == "down-right" then
         if ray_direction == "up" then return "left"
@@ -211,7 +231,7 @@ local function reflect(ray_direction, mirror_direction)
         elseif ray_direction == "left" then return "down"
         else return "up" end
     end
-end 
+end
 
 ---@param level Level
 ---@param x integer
@@ -220,23 +240,18 @@ end
 ---@return RayStep[]
 local function cast_ray(level, x, y, direction)
     local visited = {}
-    local fmt = "%d/%d/%s"
-    local parse = "^(%d+)/(%d+)/(.+)"
-    local todo = string.format(fmt, x, y, direction) ---@type string?
+    local todo = cast_ray_make_todo(x, y, direction) ---@type string?
     local steps = {} ---@type RayStep[]
     while todo do
         if visited[todo] then 
             break 
         end
         visited[todo] = true
-
-        local sx, sy, sdir = string.match(todo, parse)
-        local tx = assert(tonumber(sx)) ---@type integer
-        local ty = assert(tonumber(sy)) ---@type integer 
-        local dir = sdir ---@type RayDirection
+        local tx, ty, dir = cast_ray_parse_todo(todo)
         local mirror_or_item = get_mirror_or_item(level, tx, ty)
         if is_mirror(mirror_or_item) then
-            local next_dir = reflect(dir, mirror_or_item --[[@as MirrorDirection]])
+            -- found mirror, reflect
+            local next_dir = cast_ray_reflect(dir, mirror_or_item --[[@as MirrorDirection]])
             steps[#steps+1] = {x = tx, y = ty, shape = cast_ray_reflection_shape(dir, next_dir)}
             todo = cast_ray_next_todo(tx, ty, next_dir)
         elseif not mirror_or_item then
