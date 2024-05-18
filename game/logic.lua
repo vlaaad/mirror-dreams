@@ -189,6 +189,30 @@ local function cast_ray_reflection_shape(old, new)
     end
 end
 
+---@param s any
+---@return boolean
+local function is_mirror(s) 
+    return s == "down-right" or s == "up-right" 
+end
+
+---@param ray_direction RayDirection
+---@param mirror_direction MirrorDirection
+---@return RayDirection
+local function reflect(ray_direction, mirror_direction)
+    assert(is_mirror(mirror_direction))
+    if mirror_direction == "down-right" then
+        if ray_direction == "up" then return "left"
+        elseif ray_direction == "down" then return "right"
+        elseif ray_direction == "left" then return "up"
+        else return "down" end
+    else
+        if ray_direction == "up" then return "right"
+        elseif ray_direction == "down" then return "left"
+        elseif ray_direction == "left" then return "down"
+        else return "up" end
+    end
+end 
+
 ---@param level Level
 ---@param x integer
 ---@param y integer
@@ -211,32 +235,8 @@ local function cast_ray(level, x, y, direction)
         local ty = assert(tonumber(sy)) ---@type integer 
         local dir = sdir ---@type RayDirection
         local mirror_or_item = get_mirror_or_item(level, tx, ty)
-        if mirror_or_item == "down-right" then
-            -- found mirror, reflect
-            local next_dir ---@type RayDirection
-            if dir == "up" then 
-                next_dir = "left"
-            elseif dir == "down" then
-                next_dir = "right"
-            elseif dir == "left" then
-                next_dir = "up"
-            else
-                next_dir = "down"
-            end
-            steps[#steps+1] = {x = tx, y = ty, shape = cast_ray_reflection_shape(dir, next_dir)}
-            todo = cast_ray_next_todo(tx, ty, next_dir)
-        elseif mirror_or_item == "up-right" then
-            -- found mirror, reflect
-            local next_dir ---@type RayDirection
-            if dir == "up" then 
-                next_dir = "right"
-            elseif dir == "down" then
-                next_dir = "left"
-            elseif dir == "left" then
-                next_dir = "down"
-            else
-                next_dir = "up"
-            end
+        if is_mirror(mirror_or_item) then
+            local next_dir = reflect(dir, mirror_or_item --[[@as MirrorDirection]])
             steps[#steps+1] = {x = tx, y = ty, shape = cast_ray_reflection_shape(dir, next_dir)}
             todo = cast_ray_next_todo(tx, ty, next_dir)
         elseif not mirror_or_item then
