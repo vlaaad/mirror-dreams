@@ -61,8 +61,10 @@ end
 ---@field item_gos userdata[]
 
 ---@param level_id integer
+---@param display_level integer
 ---@return LevelView
-function M.create_view(level_id)
+function M.create_view(level_id, display_level)
+    msg.post("#gui", "configure", {display_level = display_level})
     local level_config = config.levels[level_id]
     local random_items = shuffle(config.items)
     local id_to_item = {}

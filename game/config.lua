@@ -40,8 +40,10 @@ local M = {
     tile_size = 64,
     items = {"diamond", "opal"},
     levels = {
+        level(1, 1, {"a", "b", "b", "a"}),
         level(2, 2, { "a", "a", "b", "b", "b", "b", "a", "a" })
-    }
+    },
+    loop_from = 1
 }
 
 return M

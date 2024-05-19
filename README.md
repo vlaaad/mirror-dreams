@@ -2,7 +2,7 @@ Mirror puzzle...
 
 TODOS:
 
-- level progression (like in the chair game)
+- levels for progression
 - analytics
 - tutorial
 - show better dot selection
