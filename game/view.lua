@@ -211,6 +211,13 @@ function M.on_input(view, action_id, action)
                             end
                         end)
                     end
+                    if logic.is_ended(view.level) then
+                        timer.delay((#result.match_rays + 1) * 0.5, false, function ()
+                            local success = logic.is_win(view.level)
+                            msg.post(".", "release_input_focus")
+                            msg.post("main:/root#controller", "finish_level", {success = success})
+                        end)
+                    end
                     break
                 end
             end

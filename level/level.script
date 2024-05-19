@@ -7,7 +7,6 @@ end
 function on_message(self, message_id, message, sender)
 	if message_id == hash("initialize") then
 		self.level_view = view.create_view(message.level)
-		-- pprint(config.levels[message.level])
 	else
 		pprint({ "level.script", message_id, message, sender })
 	end

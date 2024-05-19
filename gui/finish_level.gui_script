@@ -1,0 +1,12 @@
+function on_message(self, message_id, message, sender)
+	if message_id == hash("configure") then
+		gui.set_text(gui.get_node("button/text"), message.success and "NEXT LEVEL" or "TRY AGAIN")
+		gui.set_text(gui.get_node("text"), message.success and "SUCCESS!" or "LEVEL FAILED!")
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed and gui.pick_node(gui.get_node("button/bg"), action.x, action.y) then
+		msg.post("#controller", "next_level")
+	end
+end
