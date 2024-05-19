@@ -14,9 +14,13 @@
 
 ---@param width integer
 ---@param height integer
----@param items Item[]
+---@param str string
 ---@return LevelConfig
-local function level(width, height, items)
+local function level(width, height, str)
+    local items = {} ---@type Item[]
+    for i = 1, #str do
+        items[i] = string.sub(str, i, i)
+    end
     assert(#items == (width + height) * 2)
     local freqs = {}
     for i = 1, #items do
@@ -33,15 +37,23 @@ local function level(width, height, items)
     }
 end
 
+-- `top -> right -> bottom -> left`, horizontal left to right, vertical bottom to top
 ---@type Config
 local M = {
     display_width = sys.get_config_int("display.width"),
     display_height = sys.get_config_int("display.height"),
     tile_size = 64,
-    items = {"diamond", "opal"},
+    items = {"diamond", "opal", "blue", "violet"},
     levels = {
-        level(1, 1, {"a", "b", "b", "a"}),
-        level(2, 2, { "a", "a", "b", "b", "b", "b", "a", "a" })
+        level(1, 1, "abba"),
+        level(2, 1, "abbcca"),
+        level(2, 2, "aabbbbaa"),
+        level(2, 2, "acacbbbb"),
+        level(2, 3, "babcccbcba"),
+        level(3, 3, "abbbacbaccca"),
+        level(2, 2, "abcbdadc"),
+        level(3, 3, "abacbbbcdada"),
+        level(3, 3, "bbdbbacddadc"),
     },
     loop_from = 1
 }
