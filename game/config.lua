@@ -43,8 +43,9 @@ local M = {
     display_width = sys.get_config_int("display.width"),
     display_height = sys.get_config_int("display.height"),
     tile_size = 64,
-    items = {"diamond", "opal", "blue", "violet"},
+    items = {"diamond", "opal", "blue", "violet", "yellow", "black"},
     levels = {
+        -- 1-10
         level(1, 1, "abba"),
         level(2, 1, "abbcca"),
         level(2, 2, "aabbbbaa"),
@@ -54,8 +55,29 @@ local M = {
         level(2, 2, "abcbdadc"),
         level(3, 3, "abacbbbcdada"),
         level(3, 3, "bbdbbacddadc"),
+        level(4, 4, "abcddcacbdabcadb"),
+        -- 11-20
+        level(4, 4, "cbdbcbdbbdbcadca"),
+        level(3, 3, "acbcbcbdabcd"),
+        level(5, 3, "bdbcacabcbcacdca"),
+        level(4, 3, "aebceedbacaeda"),
+        level(4, 4, "accbcadeebacbdab"),
+        level(4, 4, "adacdadbdecaebcc"),
+        level(4, 3, "aecbccdbbacdbe"),
+        level(3, 3, "acdccdcbebae"),
+        level(3, 2, "acdecbdeab"),
+        level(5, 5, "bcddbcaacbeaeadadbac"),
+        -- 21-??
+        level(4, 4, "dbcdfefccadedbca"),
+        level(3, 4, "afcebfefaddfbc"),
+        level(3, 3, "fcecddababfe"),
+        level(5, 5, "adafbfedbdfbfcaedcab"),
+        level(5, 5, "ababcedfbeccdefbecaa"),
+        level(4, 3, "bacaacdebedfaf"),
+        level(3, 3, "abcbecdfedfa"),
+        level(5, 7, "baeadfacfddbaefcebcbefcd")
     },
-    loop_from = 1
+    loop_from = 10
 }
 
 return M

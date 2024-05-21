@@ -66,6 +66,7 @@ end
 function M.create_view(level_id, display_level)
     msg.post("#gui", "configure", {display_level = display_level})
     local level_config = config.levels[level_id]
+    math.randomseed(display_level)
     local random_items = shuffle(config.items)
     local id_to_item = {}
     for i = 1, #level_config.items do

@@ -1,9 +1,7 @@
-Mirror puzzle...
+Mirror match
 
 TODOS:
-
-- levels for progression
-- analytics
 - tutorial
+- move gems further away from the board
 - show better dot selection
-- start screen
+- analytics
