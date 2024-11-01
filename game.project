@@ -21,3 +21,9 @@ clear_color_green = 0.9
 clear_color_blue = 0.95
 clear_color_alpha = 1.0
 
+[html5]
+scale_mode = stretch
+
+[native_extension]
+app_manifest = /game.appmanifest
+

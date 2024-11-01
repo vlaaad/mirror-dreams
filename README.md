@@ -1,7 +1,8 @@
 Mirror match
 
 TODOS:
-- tutorial
 - move gems further away from the board
+- add particle effects for winning
 - show better dot selection
+- tutorial
 - analytics
